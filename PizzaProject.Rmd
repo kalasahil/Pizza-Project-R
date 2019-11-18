@@ -1,0 +1,279 @@
+---
+title: "This is for Pizza Lovers"
+author: "Sahil Kala"
+date: "November 14, 2019"
+output: 
+  html_document:
+    css: mystyle.css
+---
+```{r, echo=FALSE}
+htmltools::img(src = knitr::image_uri(file.path( "Pizza.png")), 
+               alt = 'logo', 
+               style = 'position:absolute; top:0; right:0; padding:10px;')
+```
+
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Our Analysis {.tabset}
+
+### About me and the Data we will be working on
+
+ __About me__
+ 
+ Hi I am Sahil and an aspiring Data Analyst. This is the very begining of my career where I am planning to be an efficient R coder.
+ To know more about me you can find it out at -[Sahil Kala](http://rpubs.com/sahilkala19/ourBio)
+
+ __Our Data__
+ 
+ As a part of the project, my professon Justin Jordey provided us with a list of available data to choose from. And since I love Pizza, I chose this data set which will enable you and me to find the best Pizza place in NY! The data has indepth information about Restaurants. Like - Ratings, reviews, location and price ranges.
+ In our analysis - We will be using R and its various packages to drill deep into the data and find out information which will enable foodies like you and me to get the most out of our hard earned money(or just save you parents money :p)
+ Isn't is Great?
+ 
+ __Brief Overview__
+ 
+ The data we are using n the project was part of *TidyTuesday* which is a weekly social data project in R. Here people post dataset and the community use it to make great projects and bring out best analysis and insights.
+ 
+ Here we have got three CSV files -
+ 
+ 1.  __Pizza_Barstool.csv__
+ -  The Barstool sports dataset has critic, public, and the Barstool Staff's rating as well as pricing, location, and geo-location.
+ -  This csv contains 464 rows and 22 columns
+ -  Unknown values are shown by NA
+ -  If a review is not available or not done, it gets a score of 0. For example if a Restaurant is not reviewed by a critic then it gets a score of 0 and count as 0. So, a score of 0 doesnt mean it is a bad restaurant
+ 
+ 2.  __Pizza_Jared.csv__
+ -  Jared's data is from top NY pizza restaurants, with a 6 point likert scale survey on ratings.
+ -  This csv contains 76 rows and 9 columns
+ 
+ 3.  __Pizza_Datafinity.csv__
+ -  This includes 10000 pizza places, their price ranges and geo-locations.
+ -  It has 10000 rows and 10 columns
+ -  Looking at the data we found out the there are many duplicates
+ -  We also found out that restaurant's categories are combined into a single column
+ 
+ To know more about the dataset and the authors - [Click Here](https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-10-01)
+ 
+
+### Libraries needed
+
+To go ahead with project analysis we would be using a few libraries which will help us through tasks like
+1.  Data Cleaning 
+2.  Make great Visualsation
+3.  Data manipulation
+
+Let's first load the libraries needed 
+```{r message = FALSE, warning = FALSE}
+
+#  "dplyr",        for data wrangling
+#  "ggplot2",      for drawing nicer graphics
+#  "Tidyverse"     for clean, process, model, and visualize data
+#  "stringr"       for Simple, Consistent Wrappers for Common String Operations
+#  "DT"            for the JavaScript Library 'DataTables'
+
+# Loading required (CRAN) packages
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(DT)
+library(stringr)
+```
+### Data Import
+In today's world there are myraid ways of capturing the data and is done at various levels. And this results in data which is untidy or you can say 'dirty'. Any data science/ analytics project cannot be a success if the individual(s) do not pay attention to the data being worked on. The first and foremost step of any project is to know in and out of the data throughly. Individuals needs to know what that data signifies and what level of importance each variable has. 
+Applying data cleaning techniques can make your project so much easier, it will make your predictions and analysis so much easier and thus in turn will be useful for the user.
+
+So, now we know the secret of a successful project! Let's apply the data cleaning tips and tricks learnt in class on our data set and be on a journey to find the best Pizza in the world, I mean in NYC :)
+
+__Data Import__
+Before we start cleaning, we first need to import our data set(s) in this project.
+(*Be sure to have the source csv files avaliable in the project folder*)
+
+```{r}
+barstool <- read.csv(file= 'pizza_barstool.csv')
+jared_data <- read.csv(file='pizza_jared.csv')
+datafiniti <- read.csv(file='pizza_datafiniti.csv')
+
+```
+Also, let's take a glimpse of the data
+
+__Barstool data__
+
+```{r echo= FALSE}
+writeLines("td, th { padding : 6px } th { background-color : brown ; color : white; border : 1px solid white; } td { color : brown ; border : 1px solid brown }", con = "mystyle.css")
+dset1 <- head(barstool,2)
+knitr::kable(dset1, format = "html")
+```
+
+
+
+__Jared data__
+
+
+
+```{r echo= FALSE}
+writeLines("td, th { padding : 6px } th { background-color : brown ; color : white; border : 1px solid white; } td { color : brown ; border : 1px solid brown }", con = "mystyle.css")
+dset1 <- head(jared_data,2)
+knitr::kable(dset1, format = "html")
+```
+
+
+
+__Datainfiniti data__
+
+```{r echo= FALSE}
+writeLines("td, th { padding : 6px } th { background-color : brown ; color : white; border : 1px solid white; } td { color : brown ; border : 1px solid brown }", con = "mystyle.css")
+dset1 <- head(datafiniti,2)
+knitr::kable(dset1, format = "html")
+```
+
+
+### Data Cleaning
+In this section, we will go through each dataset of this project and find out what all issues are associated to them with respect to data cleaning.
+
+__Barstooldata__
+
+1.  First lets find out if we have any missing values in Barstool data.
+2.  For simplicity,we will remove the rows with missing values.
+3.  We will remove the duplicate rows if any.
+4.  We will also remove the unnecessary columns not needed for our project.
+5.  Remove unrelevent data for example - We are only focusing on NY restaurants and Barstool data has Restaurants from other locations too.
+
+```{r}
+# Lets find out if any column has missing values and also get the count
+missing_barstool <- sapply(barstool, function(x) sum(is.na(x)))
+knitr::kable(missing_barstool, format = "html")
+```
+Here we can see the there are 2 columns longitude and latitude which have missing values and thus we will remove them.
+
+```{r}
+#removing the missing data rows
+barstoolcleaned <- drop_na(barstool)
+#Keep only Distinct rows
+barstoolDistinct <- distinct(barstoolcleaned)
+#Filtering out NY data. Can use the below command if you want to see distinct values in the city column
+#unique(barstoolDistinct$city)
+barstoolNY <- filter(barstoolDistinct, city == 'New York')
+#After running the previous command rows have been reduced to 249
+nrow(barstoolNY)
+#lets see the new transformed data
+datatable(barstoolNY)
+```
+
+Now lets see what we can clean for Jared's data
+
+1.  By looking at the data we can see that there was supposed to be 6 types of rating but most of them have only 5 and are missing the rating *Fair*. Since there is only 1 restaurant with rating Fair - We will drop that record and go ahead with remaining 5 ratings.
+
+```{r}
+jared_data_cleaned <- filter(jared_data,answer != 'Fair')
+datatable(jared_data_cleaned)
+```
+Pizza_ DataInfiniti has the following isssues
+
+1.  Lots of duplicates.
+2.  Consist data for many cities and we only need data for New York
+
+So, let's clean it
+
+```{r}
+datafiniti_clean <- distinct(datafiniti) %>% filter(city == 'New York')
+datatable(datafiniti_clean)
+```
+
+Also, one last thing we need to do before we are done with the initial cleaning of Datainfinity file. Look at the variable **categories**. It s a multivalue column. We can convert it into separate columns.
+
+First find out how many columns do we need. Below command will tell us the row which has highest categories and hence we will create those many columns.
+
+```{r}
+max(str_count(datafiniti_clean$categories,','))
+
+```
+
+```{r warning=FALSE, message=FALSE}
+datafiniti_clean_unmerged <- datafiniti_clean %>% 
+  separate(categories,into=c('cat1','cat2','cat3','cat4','cat5','cat6','cat7'),',')
+# Lets take a look if that worked
+datatable(head(datafiniti_clean_unmerged,5))
+```
+Now we can use this transformed table to find a restaurant with a particular category. For example you may want to find a place which is Kosher
+
+Now since we have done the initial cleaning of the data we will look at the summary statistics of the dataset to find if anything needs to looked into or cleaned
+
+```{r}
+#Glimpse will provide a summary of columns and datatype
+glimpse(barstoolNY)
+glimpse(jared_data_cleaned)
+glimpse(datafiniti_clean)
+```
+
+Looking at the output of the glimpse will help up later if we need to change the datatype of a particular variable for exploratory analysis
+
+Now lets dive into our data and look closely at variables(columns), its outlier and numerical summary of them.
+
+Lets look at Barstool Data. 
+```{r}
+summary(barstoolNY)
+
+```
+The summary output tells us a lot about the data. It also produce output based on datatype of the variable. For example if something is categorical/string variable we will see a set of values and it counts and its example is **name** variable.
+
+Also, if a variable is numeric(real, integer, double) we will see some statistical output for it. example here is **provider_review_count**
+
+A lot can found out by the previous output-
+
+1.  looking at the name variable, we see many restaurants have count 2 but didnt we remove duplicates? Let's not come to the conclusion that our data is still dirty. Lets first see these rows. We will take an example of Joe's Pizza
+
+```{r}
+datatable(filter(barstoolNY,name=="Joe's Pizza"))
+```
+YOU SEE! These rows are not duplicate and infact are 2 diffrent locations of a Pizza chain. So we are good here.
+We will not merge these rows as you can see a stark diffrence in the rating between these 2 locations. Shouldn't they taste the same? 
+
+Now, look at the numeric variable output and we clearly see there are outliers in the data. Let's take a look at a particular example - provider_review_count. Look at the min and max value. There is such a vast diffrence and these outliers which are far from median can produce some inaccurate results if considered in the calculations.
+
+Now the question comes- Should be keep them or not? The answer is IT DEPENDS! Ask your stakeholders if they really need the info about them or if is it ok we can ignore them in our calculations? Sometimes we can ignore them if we are looking at the overall picture or trying to fit a model. In our case we will keep only the outliers which are on the higher side because more the ratings more accurate the information will be. Ignoring the lower bound outliers will make sure that we do not include untrustworthy data. For example if some restaurant has only 4 reviews and have all 5 stars then you might think it is better than a restaurant with 4.2 rating but 1000 reviews. All those 4 reviews can be the paid reviews or from its owner itself. 
+
+so lets remove the lowerbound outliers - 
+```{r}
+# We will keep only those restaurants which have at least 75 reviewsby the provider. You can choose any other variable/review column as the filter 
+barstoolNY_Cleaned <- filter(barstoolNY,provider_review_count >= 75)
+```
+As we progress through our project, we may find out some more issues and can come back to this task of data cleaning. But as of now, I think we are good.
+
+**Merging/Joining**
+
+Also, since data is scattered in 3 different files we would be joining them to bring the data together.
+
+*Note- We will show the merging as part of final exam.*
+
+### Exploratory analysis
+**Ratings**
+
+By this time you would be knowing for sure that we are on a mission to find the best Pizza place in New York.
+But- As we all are different so do our preferences. Meaning of 'Best Pizza' is subjective and can include or exclude many factors.
+
+So, we will try to find out the top 10 best pizza place based on -
+
+1.  Overall ratings
+2.  Value for money/price level
+3.  Community ratings
+4.  Barstool ratings
+5.  Critic ratings
+
+All of these can be easily showed by using beautiful graphs made on ggplot2
+Choice of graph - Barchart
+
+**MAP**
+
+Apart form that, we would also try to come up with a New York map which will use the geo data available and will show the pizza places.
+
+**Relationship between Ratings and Prices**
+
+Here we will try to find out if there is a relationship between prices and ratings. For example, do expensive places have higher ratings? This can be shown with a scatter plot.
+
+### Conclusion
+
